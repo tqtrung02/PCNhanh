@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Có thể thay đổi thành "mysql", "sqlite", "mongodb", etc.
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  price         Int      // Giá bằng VNĐ
+  originalPrice Int?     // Giá gốc (nếu có giảm giá)
+  image         String
+  category      String
+  brand         String?
+  description   String
+  inStock       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Specs dưới dạng JSON
+  specs Json?
+
+  // Relations
+  orderItems OrderItem[]
+
+  @@index([category])
+  @@index([brand])
+  @@index([inStock])
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  name          String
+  phone         String
+  email         String?
+  address       String
+  note          String?
+  paymentMethod String   @default("cod")
+  totalPrice    Int
+  status        String   @default("pending") // pending, confirmed, shipping, completed, cancelled
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Int // Giá tại thời điểm đặt hàng
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull) // Optional để giữ lịch sử nếu product bị xóa
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model InstallationRequest {
+  id            String   @id @default(cuid())
+  name          String
+  phone         String
+  email         String?
+  address       String
+  note          String?
+  preferredDate String?
+  preferredTime String?
+  components    Json     // Lưu build components dưới dạng JSON
+  totalPrice    Int
+  status        String   @default("pending") // pending, confirmed, scheduled, completed, cancelled
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+

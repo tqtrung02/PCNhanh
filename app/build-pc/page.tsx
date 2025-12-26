@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { products, Product } from "@/app/data/products";
+import { Product } from "@/app/data/products";
 import { useCart } from "@/app/context/CartContext";
+import { fetchProducts } from "@/lib/api";
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("vi-VN", {
@@ -15,7 +16,17 @@ function formatPrice(price: number) {
 
 // Helper component to render product image
 function ProductImage({ image, alt, className = "" }: { image: string; alt: string; className?: string }) {
-  // Check if image is a file path (starts with /) or emoji
+  // Check if image is an external URL (starts with http:// or https://)
+  if (image.startsWith("http://") || image.startsWith("https://")) {
+    return (
+      <img
+        src={image}
+        alt={alt}
+        className={`object-cover ${className}`}
+      />
+    );
+  }
+  // Check if image is a file path (starts with /)
   if (image.startsWith("/")) {
     return (
       <Image
@@ -71,11 +82,20 @@ const componentKeywords: Record<string, string[]> = {
 };
 
 export default function BuildPCPage() {
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedComponents, setSelectedComponents] = useState<BuildComponents>({});
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { addToCart } = useCart();
   const router = useRouter();
+
+  useEffect(() => {
+    async function loadProducts() {
+      const data = await fetchProducts();
+      setProducts(data);
+    }
+    loadProducts();
+  }, []);
 
   // Get available products for each component type
   const getAvailableProducts = (componentType: string): Product[] => {

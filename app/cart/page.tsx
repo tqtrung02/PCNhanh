@@ -14,7 +14,17 @@ function formatPrice(price: number) {
 
 // Helper component to render product image
 function ProductImage({ image, alt, className = "" }: { image: string; alt: string; className?: string }) {
-  // Check if image is a file path (starts with /) or emoji
+  // Check if image is an external URL (starts with http:// or https://)
+  if (image.startsWith("http://") || image.startsWith("https://")) {
+    return (
+      <img
+        src={image}
+        alt={alt}
+        className={`object-cover ${className}`}
+      />
+    );
+  }
+  // Check if image is a file path (starts with /)
   if (image.startsWith("/")) {
     return (
       <Image

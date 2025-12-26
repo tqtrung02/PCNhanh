@@ -1,14 +1,24 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { products, categories, brands } from "@/app/data/products";
+import { categories, brands, Product } from "@/app/data/products";
 import { useCart } from "@/app/context/CartContext";
 import { ProductGrid } from "@/components/ProductGrid";
+import { fetchProducts } from "@/lib/api";
+
+function formatPrice(price: number) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(price);
+}
 
 type SortOption = "default" | "price-asc" | "price-desc" | "name-asc";
 
 export default function AllProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("Tất cả");
   const [selectedBrand, setSelectedBrand] = useState<string>("Tất cả");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000000]);
@@ -18,43 +28,26 @@ export default function AllProductsPage() {
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const { addToCart } = useCart();
 
-  // Filter products
+  useEffect(() => {
+    async function loadProducts() {
+      setLoading(true);
+      const data = await fetchProducts({
+        category: selectedCategory !== "Tất cả" ? selectedCategory : undefined,
+        brand: selectedBrand !== "Tất cả" ? selectedBrand : undefined,
+        search: searchQuery || undefined,
+        inStock: inStockOnly || undefined,
+        minPrice: priceRange[0],
+        maxPrice: priceRange[1],
+      });
+      setProducts(data);
+      setLoading(false);
+    }
+    loadProducts();
+  }, [selectedCategory, selectedBrand, searchQuery, inStockOnly, priceRange]);
+
+  // Sort products (filtering đã được xử lý ở API)
   const filteredProducts = useMemo(() => {
-    let filtered = products;
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        (product) =>
-          product.name.toLowerCase().includes(query) ||
-          product.description.toLowerCase().includes(query) ||
-          product.brand?.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by category
-    if (selectedCategory !== "Tất cả") {
-      filtered = filtered.filter((product) => product.category === selectedCategory);
-    }
-
-    // Filter by brand
-    if (selectedBrand !== "Tất cả") {
-      filtered = filtered.filter((product) => product.brand === selectedBrand);
-    }
-
-    // Filter by price range
-    filtered = filtered.filter(
-      (product) => product.price >= priceRange[0] && product.price <= priceRange[1]
-    );
-
-    // Filter by stock status
-    if (inStockOnly) {
-      filtered = filtered.filter((product) => product.inStock);
-    }
-
-    // Sort products
-    const sorted = [...filtered];
+    const sorted = [...products];
     switch (sortBy) {
       case "price-asc":
         sorted.sort((a, b) => a.price - b.price);
@@ -68,13 +61,13 @@ export default function AllProductsPage() {
       default:
         break;
     }
-
     return sorted;
-  }, [searchQuery, selectedCategory, selectedBrand, priceRange, inStockOnly, sortBy]);
+  }, [products, sortBy]);
 
   const maxPrice = useMemo(() => {
+    if (products.length === 0) return 50000000;
     return Math.max(...products.map((p) => p.price), 50000000);
-  }, []);
+  }, [products]);
 
   const handlePriceRangeChange = (value: number, index: number) => {
     const newRange: [number, number] = [...priceRange];
@@ -466,22 +459,42 @@ export default function AllProductsPage() {
             )}
 
             {/* Products Grid */}
-            <ProductGrid
-              products={filteredProducts}
-              showBrand={true}
-              columns="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              onAddToCart={addToCart}
-              emptyMessage="Không tìm thấy sản phẩm"
-            />
-            {filteredProducts.length === 0 && (
-              <div className="mt-6 text-center">
-                <button
-                  onClick={resetFilters}
-                  className="px-6 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
-                >
-                  Đặt lại bộ lọc
-                </button>
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse"
+                  >
+                    <div className="aspect-square bg-gray-200"></div>
+                    <div className="p-4 space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            ) : (
+              <>
+                <ProductGrid
+                  products={filteredProducts}
+                  showBrand={true}
+                  columns="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                  onAddToCart={addToCart}
+                  emptyMessage="Không tìm thấy sản phẩm"
+                />
+                {filteredProducts.length === 0 && !loading && (
+                  <div className="mt-6 text-center">
+                    <button
+                      onClick={resetFilters}
+                      className="px-6 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                    >
+                      Đặt lại bộ lọc
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

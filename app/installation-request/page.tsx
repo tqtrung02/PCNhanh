@@ -6,6 +6,35 @@ import Link from "next/link";
 import Image from "next/image";
 import { BuildComponents } from "@/app/build-pc/page";
 
+// Helper component to render product image
+function ProductImage({ image, alt, className = "" }: { image: string; alt: string; className?: string }) {
+  // Check if image is an external URL (starts with http:// or https://)
+  if (image.startsWith("http://") || image.startsWith("https://")) {
+    return (
+      <img
+        src={image}
+        alt={alt}
+        className={`object-cover ${className}`}
+      />
+    );
+  }
+  // Check if image is a file path (starts with /)
+  if (image.startsWith("/")) {
+    return (
+      <Image
+        src={image}
+        alt={alt}
+        width={100}
+        height={100}
+        className={`object-cover ${className}`}
+        unoptimized
+      />
+    );
+  }
+  // Render emoji
+  return <div className={className}>{image}</div>;
+}
+
 function formatPrice(price: number) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -64,25 +93,41 @@ export default function InstallationRequestPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // Create installation request via API
+      const response = await fetch("/api/installation-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email || null,
+          address: formData.address,
+          note: formData.note || null,
+          preferredDate: formData.preferredDate || null,
+          preferredTime: formData.preferredTime || null,
+          components: buildData.components,
+          totalPrice: getTotalPrice(),
+        }),
+      });
 
-    // Save request
-    const requestData = {
-      ...formData,
-      buildData,
-      timestamp: new Date().toISOString(),
-    };
-    localStorage.setItem("installationRequests", JSON.stringify([
-      ...(JSON.parse(localStorage.getItem("installationRequests") || "[]")),
-      requestData,
-    ]));
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create installation request");
+      }
 
-    // Clear build data
-    localStorage.removeItem("installationRequest");
+      const requestData = await response.json();
 
-    alert("Yêu cầu lắp đặt đã được gửi thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.");
-    router.push("/");
+      // Clear build data from localStorage
+      localStorage.removeItem("installationRequest");
+
+      alert("Yêu cầu lắp đặt đã được gửi thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.");
+      router.push("/");
+    } catch (error: any) {
+      console.error("Error creating installation request:", error);
+      alert(error.message || "Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.");
+      setIsSubmitting(false);
+    }
   };
 
   const getTotalPrice = () => {
@@ -118,7 +163,13 @@ export default function InstallationRequestPage() {
               <div className="space-y-3">
                 {Object.entries(buildData.components).map(([key, component]) => (
                   <div key={key} className="flex items-center gap-4 pb-3 border-b">
-                    <div className="text-3xl"><Image src={component.image} alt={component.name} width={100} height={100} /></div>
+                    <div className="w-24 h-24 flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+                      <ProductImage
+                        image={component.image}
+                        alt={component.name}
+                        className="w-full h-full text-3xl"
+                      />
+                    </div>
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900">{component.name}</p>
                       <p className="text-sm text-gray-600">

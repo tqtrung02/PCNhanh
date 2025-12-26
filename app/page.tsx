@@ -1,14 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { products, categories } from "@/app/data/products";
+import { useState, useEffect } from "react";
+import { categories, Product } from "@/app/data/products";
 import { useCart } from "@/app/context/CartContext";
 import { ProductGrid } from "@/components/ProductGrid";
+import { fetchProducts } from "@/lib/api";
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
+
+  useEffect(() => {
+    async function loadProducts() {
+      setLoading(true);
+      const allProducts = await fetchProducts();
+      setProducts(allProducts);
+      setLoading(false);
+    }
+    loadProducts();
+  }, []);
 
   const filteredProducts =
     selectedCategory === "Tất cả"
@@ -64,12 +77,30 @@ export default function Home() {
               Xem tất cả sản phẩm
             </Link>
           </div>
-          <ProductGrid
-            products={filteredProducts}
-            showBrand={false}
-            columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            onAddToCart={addToCart}
-          />
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse"
+                >
+                  <div className="aspect-square bg-gray-200"></div>
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ProductGrid
+              products={filteredProducts}
+              showBrand={false}
+              columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              onAddToCart={addToCart}
+            />
+          )}
         </div>
       </section>
 

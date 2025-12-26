@@ -33,12 +33,45 @@ export default function CheckoutPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // Prepare order items
+      const items = cart.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity,
+        price: item.price,
+      }));
 
-    // Clear cart and redirect
-    clearCart();
-    router.push("/order-success");
+      // Create order via API
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email || null,
+          address: formData.address,
+          note: formData.note || null,
+          paymentMethod: formData.paymentMethod,
+          items,
+          totalPrice: getTotalPrice(),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create order");
+      }
+
+      const order = await response.json();
+
+      // Clear cart and redirect with order ID
+      clearCart();
+      router.push(`/order-success?id=${order.id}`);
+    } catch (error: any) {
+      console.error("Error creating order:", error);
+      alert(error.message || "Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.");
+      setIsSubmitting(false);
+    }
   };
 
   return (

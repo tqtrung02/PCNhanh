@@ -2,9 +2,11 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { products } from "@/app/data/products";
+import { useState, useEffect } from "react";
+import { Product } from "@/app/data/products";
 import { useCart } from "@/app/context/CartContext";
 import Link from "next/link";
+import { fetchProduct } from "@/lib/api";
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("vi-VN", {
@@ -15,7 +17,17 @@ function formatPrice(price: number) {
 
 // Helper component to render product image
 function ProductImage({ image, alt, className = "" }: { image: string; alt: string; className?: string }) {
-  // Check if image is a file path (starts with /) or emoji
+  // Check if image is an external URL (starts with http:// or https://)
+  if (image.startsWith("http://") || image.startsWith("https://")) {
+    return (
+      <img
+        src={image}
+        alt={alt}
+        className={`object-cover ${className}`}
+      />
+    );
+  }
+  // Check if image is a file path (starts with /)
   if (image.startsWith("/")) {
     return (
       <Image
@@ -36,7 +48,32 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { addToCart } = useCart();
-  const product = products.find((p) => p.id === params.id);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProduct() {
+      if (params.id && typeof params.id === "string") {
+        setLoading(true);
+        const data = await fetchProduct(params.id);
+        setProduct(data);
+        setLoading(false);
+      }
+    }
+    loadProduct();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="text-xl font-semibold text-gray-900">Đang tải...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
