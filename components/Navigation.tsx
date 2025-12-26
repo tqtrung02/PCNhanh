@@ -25,6 +25,18 @@ const Navigation = () => {
               Trang chủ
             </Link>
             <Link
+              href="/products"
+              className="text-gray-700 hover:text-primary-600 transition-colors"
+            >
+              Sản phẩm
+            </Link>
+            <Link
+              href="/build-pc"
+              className="text-gray-700 hover:text-primary-600 transition-colors"
+            >
+              Build PC
+            </Link>
+            <Link
               href="/services"
               className="text-gray-700 hover:text-primary-600 transition-colors"
             >
@@ -129,6 +141,20 @@ const Navigation = () => {
               onClick={() => setIsOpen(false)}
             >
               Trang chủ
+            </Link>
+            <Link
+              href="/products"
+              className="block px-3 py-2 text-gray-700 hover:bg-primary-50 rounded"
+              onClick={() => setIsOpen(false)}
+            >
+              Sản phẩm
+            </Link>
+            <Link
+              href="/build-pc"
+              className="block px-3 py-2 text-gray-700 hover:bg-primary-50 rounded"
+              onClick={() => setIsOpen(false)}
+            >
+              Build PC
             </Link>
             <Link
               href="/services"

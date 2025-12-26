@@ -2,15 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { products, categories, Product } from "@/app/data/products";
+import { products, categories } from "@/app/data/products";
 import { useCart } from "@/app/context/CartContext";
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
-}
+import { ProductGrid } from "@/components/ProductGrid";
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
@@ -18,8 +12,8 @@ export default function Home() {
 
   const filteredProducts =
     selectedCategory === "Tất cả"
-      ? products
-      : products.filter((product) => product.category === selectedCategory);
+      ? products.reverse().slice(0, 12)
+      : products.filter((product) => product.category === selectedCategory).slice(0, 12);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -59,54 +53,23 @@ export default function Home() {
       {/* Products Grid */}
       <section className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8 text-gray-900">
-            Sản phẩm nổi bật
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-              >
-                <Link href={`/products/${product.id}`}>
-                  <div className="aspect-square bg-gray-100 flex items-center justify-center text-6xl">
-                    {product.image}
-                  </div>
-                </Link>
-                <div className="p-4">
-                  <Link href={`/products/${product.id}`}>
-                    <h3 className="font-semibold text-lg mb-2 text-gray-900 hover:text-primary-600">
-                      {product.name}
-                    </h3>
-                  </Link>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {product.description}
-                  </p>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xl font-bold text-primary-600">
-                      {formatPrice(product.price)}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="text-sm text-gray-500 line-through">
-                        {formatPrice(product.originalPrice)}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => addToCart(product)}
-                    disabled={!product.inStock}
-                    className={`w-full py-2 rounded-lg font-semibold transition-colors ${
-                      product.inStock
-                        ? "bg-primary-600 text-white hover:bg-primary-700"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                  >
-                    {product.inStock ? "Thêm vào giỏ" : "Hết hàng"}
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold text-gray-900">
+              Sản phẩm nổi bật
+            </h2>
+            <Link
+              href="/products"
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Xem tất cả sản phẩm
+            </Link>
           </div>
+          <ProductGrid
+            products={filteredProducts}
+            showBrand={false}
+            columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            onAddToCart={addToCart}
+          />
         </div>
       </section>
 

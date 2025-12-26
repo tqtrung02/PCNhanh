@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/app/context/CartContext";
 import { useRouter } from "next/navigation";
 
@@ -9,6 +10,25 @@ function formatPrice(price: number) {
     style: "currency",
     currency: "VND",
   }).format(price);
+}
+
+// Helper component to render product image
+function ProductImage({ image, alt, className = "" }: { image: string; alt: string; className?: string }) {
+  // Check if image is a file path (starts with /) or emoji
+  if (image.startsWith("/")) {
+    return (
+      <Image
+        src={image}
+        alt={alt}
+        width={200}
+        height={200}
+        className={`object-cover ${className}`}
+        unoptimized
+      />
+    );
+  }
+  // Render emoji
+  return <div className={className}>{image}</div>;
 }
 
 export default function CartPage() {
@@ -55,8 +75,12 @@ export default function CartPage() {
                 key={item.id}
                 className="bg-white rounded-lg shadow-sm p-6 flex gap-4"
               >
-                <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center text-4xl flex-shrink-0">
-                  {item.image}
+                <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <ProductImage
+                    image={item.image}
+                    alt={item.name}
+                    className="w-full h-full text-4xl"
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg mb-2 text-gray-900">
